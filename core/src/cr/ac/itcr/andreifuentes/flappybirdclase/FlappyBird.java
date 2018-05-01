@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
@@ -20,7 +21,7 @@ public class FlappyBird extends ApplicationAdapter {
 	Texture background;
 	Texture topTube;
 	Texture bottomTube;
-	Texture[] birds;
+	TextureRegion[] birds;
 	Texture gameOver;
 	int birdState;
 	float gap;
@@ -40,20 +41,29 @@ public class FlappyBird extends ApplicationAdapter {
 	BitmapFont font;
 	int game_state;
 	int birdSize;
+	int lift;
+	float distance_rate;
+	int rotation;
 
 	Circle birdCircle;
 	Rectangle[] topPipes;
 	Rectangle[] bottomPipes;
 
-	@Override
+    public FlappyBird(float gravity, int lift, float distance_rate) {
+        this.gravity = gravity;
+        this.lift = lift;
+        this.distance_rate = distance_rate;
+    }
+
+    @Override
 	public void create () {
 		batch = new SpriteBatch();
 		shapeRenderer = new ShapeRenderer();
 
 		background = new Texture("bg.png");
-		birds = new Texture[2];
-		birds[0] = new Texture("bird.png");
-		birds[1] = new Texture("bird2.png");
+		birds = new TextureRegion[2];
+		birds[0] = new TextureRegion(new Texture("bird.png"));
+		birds[1] = new TextureRegion(new Texture("bird2.png"));
 		topTube = new Texture("toptube.png");
 		bottomTube = new Texture("bottomtube.png");
 		gameOver = new Texture("gameOverOriginal.png");
@@ -66,14 +76,15 @@ public class FlappyBird extends ApplicationAdapter {
 		game_state = 0;
 		gap = 500;
 		velocity = 0;
-		gravity = 0.5f;
-		random = new Random();
-		distance = Gdx.graphics.getWidth() * 3/5;
+        random = new Random();
+		distance = Gdx.graphics.getWidth() * distance_rate;
 		maxLine = Gdx.graphics.getHeight()* 3/4;
 		minLine = Gdx.graphics.getHeight()* 1/4;
 		score = 0;
 		pipeActivo = 0;
 		birdSize = 0;
+
+		rotation = 0;
 
 		font = new BitmapFont();
 		font.setColor(Color.WHITE);
@@ -83,7 +94,7 @@ public class FlappyBird extends ApplicationAdapter {
 	}
 
 	public void startGame(){
-		birdY = Gdx.graphics.getHeight()/2 - birds[birdState].getHeight()/2;
+		birdY = Gdx.graphics.getHeight()/2 - birds[birdState].getRegionHeight()/2;
 		for (int i = 0; i<numberOfPipes; i++){
 			pipeYOffset[i] = (random.nextFloat()*(maxLine-minLine)+minLine);
 			pipeX[i] = Gdx.graphics.getWidth()/2 - topTube.getWidth() + Gdx.graphics.getWidth() + distance*i;
@@ -122,7 +133,7 @@ public class FlappyBird extends ApplicationAdapter {
 			}
 
 
-			birdCircle.set(Gdx.graphics.getWidth()/2, birdY + birds[birdState].getHeight()/2, birds[birdState].getWidth()/2);
+			birdCircle.set(Gdx.graphics.getWidth()/2, birdY + birds[birdState].getRegionHeight()/2, birds[birdState].getRegionWidth()/2);
 
 //			shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 //			shapeRenderer.setColor(Color.MAGENTA);
@@ -176,7 +187,7 @@ public class FlappyBird extends ApplicationAdapter {
 			}
 
 			if (Gdx.input.justTouched()){
-				velocity = velocity - 30;
+				velocity = velocity - lift;
 			}
 
 			birdState = birdState == 0 ? 1 : 0;
@@ -184,15 +195,21 @@ public class FlappyBird extends ApplicationAdapter {
 
 			velocity = velocity + gravity;
 
-
-			if (birdY < 0){
+			if (birdY < 0 || birdY > Gdx.graphics.getHeight()){
 				game_state = 2;
 			}
 			else {
 				birdY = birdY - velocity;
 			}
+            System.out.println(velocity);
 
-//			shapeRenderer.end();
+            if(Math.round(velocity) == 0f){
+                rotation = 0;
+            }else if(Math.round(velocity) < 0f){
+                rotation = 45;
+            }else if(Math.round(velocity) > 0f){
+                rotation = 315;
+            }
 
 
 		}
@@ -208,9 +225,10 @@ public class FlappyBird extends ApplicationAdapter {
 			}
 		}
 
-		batch.draw(birds[birdState], Gdx.graphics.getWidth() / 2 - birds[birdState].getWidth()/2,  birdY,  birds[birdState].getWidth() + birdSize, birds[birdState].getHeight() + birdSize);
+		//batch.draw(birds[birdState], Gdx.graphics.getWidth() / 2 - birds[birdState].getRegionWidth()/2,  birdY,  birds[birdState].getRegionWidth() + birdSize, birds[birdState].getRegionHeight() + birdSize);
+		batch.draw(birds[birdState].getTexture(), Gdx.graphics.getWidth() / 2 - birds[birdState].getRegionWidth()/2,  birdY,birds[birdState].getRegionWidth()/2, birds[birdState].getRegionHeight()/2,birds[birdState].getRegionWidth(), birds[birdState].getRegionHeight(),1,1,rotation,birds[birdState].getRegionX(), birds[birdState].getRegionY(), birds[birdState].getRegionWidth(), birds[birdState].getRegionHeight(), false, false);
+
 		font.draw(batch, Integer.toString(score), Gdx.graphics.getWidth()*1/8, Gdx.graphics.getHeight()*9/10);
-		birdSize += 1;
 		batch.end();
 
 	}
